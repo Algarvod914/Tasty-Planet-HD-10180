@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>美味星球： HD 10180 · Tasty Planet HD 10180</title>
+<style>
+:root{--bg:#04060e;--panel:rgba(10,16,32,.85);--line:rgba(120,180,255,.16);--cy:#5ce6ff;--vi:#b78cff;--am:#ffc86b;--tx:#e6eeff;--dm:#8a97b8;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--tx);font:14px/1.5 "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+canvas#game{position:fixed;inset:0;display:block}
+.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:20;
+  background:rgba(3,5,12,.82);backdrop-filter:blur(6px);text-align:center;padding:20px}
+.ov.hide{display:none}
+h1{font-size:44px;letter-spacing:.12em;text-shadow:0 0 30px rgba(92,230,255,.5)}
+h1 .hl{color:var(--cy)}
+.sub{color:var(--dm);letter-spacing:.28em;font-size:13px;margin:6px 0 26px}
+.btn{display:inline-block;font:600 15px/1 ui-monospace,Consolas,monospace;letter-spacing:.1em;color:#04121c;
+  background:linear-gradient(135deg,var(--cy),var(--vi));border:none;border-radius:10px;padding:14px 34px;cursor:pointer;
+  box-shadow:0 0 24px rgba(92,230,255,.4);transition:.15s;margin:6px}
+.btn:hover{transform:translateY(-2px);box-shadow:0 0 34px rgba(92,230,255,.65)}
+.btn.ghost{background:transparent;color:var(--cy);border:1px solid rgba(92,230,255,.5);box-shadow:none}
+.note{font-size:11px;color:#5a6888;margin-top:22px;max-width:520px}
+/* level select */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;max-width:960px;width:100%;margin-top:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;transition:.15s;text-align:left}
+.card:hover{border-color:var(--cy);box-shadow:0 0 18px rgba(92,230,255,.25);transform:translateY(-3px)}
+.card.lock{opacity:.35;cursor:not-allowed}
+.card.lock:hover{transform:none;box-shadow:none;border-color:var(--line)}
+.card h3{font-size:15px;margin-bottom:4px}
+.card .tag{font:600 10px/1 ui-monospace,monospace;letter-spacing:.1em;padding:3px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
+.card p{font-size:11px;color:var(--dm);line-height:1.6}
+.card .stars{color:var(--am);font-size:13px;margin-top:4px}
+/* intro */
+.dtable{display:grid;grid-template-columns:auto auto;gap:6px 22px;font:500 13px/1.5 ui-monospace,Consolas,monospace;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 26px;margin:16px 0;text-align:left}
+.dtable b{color:var(--cy);font-weight:600}
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;font-family:ui-monospace,Consolas,monospace}
+.panelbox{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;backdrop-filter:blur(8px)}
+#stats{top:14px;left:14px;min-width:240px}
+#stats .t{font-size:10px;letter-spacing:.24em;color:var(--dm);margin-bottom:6px}
+#stats .r{display:flex;justify-content:space-between;font-size:13px;margin:3px 0}
+#stats .r b{color:var(--cy);font-weight:600}
+#stats .r.eat b{color:var(--am)}
+#obj{top:14px;right:14px;width:250px;text-align:left}
+#obj .t{font-size:11px;letter-spacing:.14em;color:var(--am);margin-bottom:6px}
+#obj .lvl{font-size:12px;color:var(--tx);margin-bottom:6px}
+#pbar{height:8px;border-radius:4px;background:rgba(120,180,255,.12);overflow:hidden;margin:6px 0 4px}
+#pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--cy),var(--vi));border-radius:4px;transition:width .2s}
+#obj .meta{font-size:11px;color:var(--dm)}
+#hudbtns{bottom:16px;right:16px;pointer-events:auto;display:flex;gap:8px}
+.hbtn{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--cy);
+  font-size:17px;cursor:pointer;backdrop-filter:blur(8px)}
+.hbtn:hover{border-color:var(--cy)}
+#hint{bottom:16px;left:14px;font-size:11px;color:var(--dm);background:none;border:none}
+#toast{position:fixed;top:22%;left:50%;transform:translateX(-50%);z-index:15;font:700 20px/1.3 ui-monospace,Consolas,monospace;
+  color:var(--am);text-shadow:0 0 18px rgba(255,200,107,.8);opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;letter-spacing:.1em}
+/* results */
+.big{font:700 40px/1.1 ui-monospace,Consolas,monospace;text-shadow:0 0 26px rgba(92,230,255,.5);margin-bottom:8px}
+.rrow{font:500 14px/2 ui-monospace,Consolas,monospace;color:var(--dm)}
+.rrow b{color:var(--cy)}
+.starrow{font-size:34px;color:var(--am);letter-spacing:.2em;margin:8px 0;text-shadow:0 0 20px rgba(255,200,107,.7)}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hide" style="display:none">
+  <div class="panelbox" id="stats">
+    <div class="t">黑洞 · 统计面板</div>
+    <div class="r"><span>直径</span><b id="sD">1.00 mm</b></div>
+    <div class="r"><span>体积</span><b id="sV">0.524 mm³</b></div>
+    <div class="r"><span>密度(铁)</span><b>7.87 g/cm³</b></div>
+    <div class="r"><span>质量(铁球)</span><b id="sM">4.12 mg</b></div>
+    <div class="r eat"><span>已吞噬质量</span><b id="sE">0</b></div>
+  </div>
+  <div class="panelbox" id="obj">
+    <div class="t" id="oGoal">◆ 关卡目标</div>
+    <div class="lvl" id="oLvl">第1关 · HD 10180 b</div>
+    <div id="pbar"><div id="pfill"></div></div>
+    <div class="meta" id="oMeta">体积进度 0.000% · 已吞噬 0 个</div>
+    <div class="meta" id="oNext"></div>
+  </div>
+  <div class="panelbox" id="hudbtns">
+    <button class="hbtn" id="bMute">🔊</button>
+    <button class="hbtn" id="bPause">⏸</button>
+  </div>
+  <div class="panelbox" id="hint">鼠标/触屏拖动 或 WASD/方向键 移动 · 吞噬比你小的物体</div>
+</div>
+<div id="toast"></div>
+
+<!-- TITLE -->
+<div class="ov" id="ovTitle">
+  <h1>美味星球<span class="hl">：HD 10180</span></h1>
+  <div class="sub">TASTY PLANET · 黑洞吞噬模拟 · 127 光年外的盛宴</div>
+  <div>
+    <button class="btn" id="bStart">▶ 开始游戏</button>
+    <button class="btn ghost" id="bHow">玩法说明</button>
+  </div>
+  <div class="note">你是一个直径 1 毫米的微型黑洞，坠入了类太阳恒星 HD 10180 的行星系统。
+  吞噬一切比你小的东西，从尘埃到行星，最终吃掉整个恒星系统！<br><br>
+  本游戏为非官方粉丝作品，与《美味星球》(Tasty Planet) 官方版本无关 · 行星数据基于公开天文观测（Lovis et al. 2010）</div>
+</div>
+
+<!-- HOW -->
+<div class="ov hide" id="ovHow">
+  <h1 style="font-size:26px">玩法说明</h1>
+  <div class="dtable" style="margin-top:18px">
+    <span>移动</span><b>鼠标拖动 / 触屏 / WASD / 方向键</b>
+    <span>吞噬</span><b>碰到比你<b style="color:var(--am)">小</b>的物体即可吃掉它并长大</b>
+    <span>危险</span><b style="color:var(--am)">比你大的物体会把你弹开</b>
+    <span>统计</span><b>直径 / 体积 / 铁球密度质量(7.87 g/cm³)实时显示在左上</b>
+    <span>发光圈</span><b>带白色光晕的物体 = 当前可吞噬</b>
+    <span>边缘箭头</span><b>指向最近的猎物与当前目标</b>
+    <span>通关</span><b>每关从 1 毫米开始；第1–6关吃掉该行星；第7关吃掉整个星系</b>
+  </div>
+  <button class="btn" id="bHowBack">返回</button>
+</div>
+
+<!-- LEVEL SELECT -->
+<div class="ov hide" id="ovSelect">
+  <h1 style="font-size:28px">选择关卡</h1>
+  <div class="sub">HD 10180 行星系统 · 水蛇座 · 距地 127 光年</div>
+  <div class="grid" id="lvGrid"></div>
+  <button class="btn ghost" id="bSelBack" style="margin-top:16px">← 返回标题</button>
+</div>
+
+<!-- INTRO -->
+<div class="ov hide" id="ovIntro">
+  <h1 style="font-size:30px" id="iName">HD 10180 b</h1>
+  <div class="sub" id="iType">熔岩行星 · 第 1 关 / 共 7 关</div>
+  <div class="dtable" id="iData"></div>
+  <div class="note" id="iMission" style="margin:0 0 14px"></div>
+  <div>
+    <button class="btn" id="bGo">开吃！</button>
+    <button class="btn ghost" id="iBack">返回选关</button>
+  </div>
+</div>
+
+<!-- COMPLETE -->
+<div class="ov hide" id="ovDone">
+  <div class="big" id="dTitle">行星吞噬完成！</div>
+  <div class="starrow" id="dStars">★★★</div>
+  <div class="rrow" id="dRows"></div>
+  <div style="margin-top:14px">
+    <button class="btn" id="bNext">下一关 ▶</button>
+    <button class="btn ghost" id="bReplay">重玩本关</button>
+    <button class="btn ghost" id="bMenu">选关</button>
+  </div>
+</div>
+
+<!-- FINALE -->
+<div class="ov hide" id="ovFinale">
+  <h1 style="font-size:34px">整个 HD 10180 星系<br>已被吞噬！</h1>
+  <div class="starrow" id="fStars">★★★</div>
+  <div class="rrow" id="fRows"></div>
+  <div class="note">从 1 毫米到 15 亿公里——你现在是一个星系级黑洞。<br>谢谢你游玩本非官方粉丝作品。</div>
+  <button class="btn" id="bFinMenu">返回选关</button>
+</div>
+
+<script>
+"use strict";
+/* ================= 数据 ================= */
+const R_E=6371e3, R_S=6.957e8;
+const STAR={name:"HD 10180",sp:"G1V",mass:"1.06 M☉",rad:"1.11 R☉",temp:"5911 K",dist:"127 光年",age:"约43亿年"};
+function geom(a,b,n){const r=Math.pow(b/a,1/(n-1));return Array.from({length:n},(_,i)=>a*Math.pow(r,i));}
+
+const LEVELS=[
+ {key:"b",lv:1,name:"HD 10180 b",cn:"熔岩行星",dBoss:2*1.13*R_E,bossCol:["#ff7a3c","#ffb85c"],
+  pal:["#4a1608","#c1440e","#ffb85c"],bg:["#1a0903","#050201"],
+  data:[["最小质量","1.4 M⊕（待确认）"],["轨道周期","1.18 天"],["轨道半长轴","0.022 AU（紧贴恒星）"],["表面环境","熔岩之海，被恒星潮汐锁定"]],
+  names:["火山灰微粒","火山灰团","火山砾","浮石","玄武岩碎屑","玄武岩碎块","玄武岩块","玄武岩柱","熔岩流","熔岩河","熔岩瀑布","熔岩湖","火山渣锥","火山锥","复式火山","火山群","熔岩原","熔岩高原","撞击坑","环形山","熔岩大峡谷","断层崖","山脉","造山带","大陆板块","岩石圈","地幔柱","熔岩行星核"]},
+ {key:"c",lv:2,name:"HD 10180 c",cn:"冰海行星",dBoss:2*2.40*R_E,bossCol:["#7ad4e8","#d8f4fb"],
+  pal:["#06222e","#1d7a8c","#bfeef7"],bg:["#03141c","#020a10"],
+  data:[["最小质量","13.2 M⊕"],["轨道周期","5.76 天"],["轨道半长轴","0.064 AU"],["行星类型","冰巨星 / 海洋世界"]],
+  names:["冰晶","霜花","冰粒","碎冰","浮冰","冰块","冰山","冰丘","冰塔","冰川","冰崖","冰峡湾","冰原","冰架","海冰","冰海","冰洋","冰盖","冰层","冰下湖","冰渊","冰壑","冰山脉","冰大陆","次表层海洋","全球海洋","深渊海沟","冰海行星核"]},
+ {key:"d",lv:3,name:"HD 10180 d",cn:"岩石行星",dBoss:2*2.29*R_E,bossCol:["#8a9ab8","#e2e9f5"],
+  pal:["#141a26","#4a5a78","#c9d6ea"],bg:["#0a0e16","#04060a"],
+  data:[["最小质量","11.8 M⊕"],["轨道周期","16.36 天"],["轨道半长轴","0.129 AU"],["行星类型","岩石质超级地球"]],
+  names:["尘埃","岩屑","碎石","砾石","漂砾","岩块","巨岩","石阵","丘陵","山麓","山峰","山脊","台地","高原","峡谷","地堑","断层带","火山岩层","沉积层","岩层","地层","冰岩混合层","岩石圈","板块","陆块","大陆","壳幔边界","行星核"]},
+ {key:"e",lv:4,name:"HD 10180 e",cn:"气态巨行星",dBoss:2*2.72*R_E,bossCol:["#35c4a8","#b8f2e2"],
+  pal:["#062b26","#148f7b","#9ff0dd"],bg:["#04120f","#020806"],
+  data:[["最小质量","25.1 M⊕"],["轨道周期","49.74 天"],["轨道半长轴","0.270 AU"],["行星类型","气态巨行星"]],
+  names:["氨晶粒","氨晶簇","云滴","云雾","云团","云层","云带","风暴胞","气旋","大风暴","风暴带","激流带","气流环","环流带","对流胞","云墙","云顶","平流层","云层顶","极光区","环带","行星环","内层大气","外层大气","全球风暴带","气态外壳","高压氢层","行星中心"]},
+ {key:"f",lv:5,name:"HD 10180 f",cn:"风暴巨行星",dBoss:2*2.70*R_E,bossCol:["#5a8ee0","#c2d9f8"],
+  pal:["#0a1a33","#2456a8","#a8ccf5"],bg:["#060f1e","#03060c"],
+  data:[["最小质量","23.8 M⊕"],["轨道周期","122.76 天"],["轨道半长轴","0.493 AU"],["行星类型","冰巨星，强风暴"]],
+  names:["甲烷晶粒","甲烷晶簇","氦云滴","氦雾","云团","卷云","云带","风暴胞","反气旋","巨型风暴","风暴带","急流带","环流圈","对流带","云塔","云顶","平流层","高层云","极光帘","亮环带","暗环带","行星环","深层大气","外层大气","全球环流","冰氢外壳","金属氢层","行星中心"]},
+ {key:"g",lv:6,name:"HD 10180 g",cn:"宜居带行星",dBoss:2*2.62*R_E,bossCol:["#5ec86e","#d8f2c0"],
+  pal:["#0a2412","#2d8a4a","#c8f0b0"],bg:["#06180c","#030a05"],
+  data:[["最小质量","21.4 M⊕"],["轨道周期","601.2 天"],["轨道半长轴","1.42 AU"],["特殊之处","位于宜居带！可能存在液态水"]],
+  names:["水汽滴","露珠","雨滴","水洼","溪流","水潭","池塘","湖泊","河湾","河流","江河","泛滥平原","三角洲","湿地","草原","丘陵","森林","山脉","雪原","高原","峡谷","大陆","浅海","深海","全球海洋","生态圈","生物圈","行星核"]},
+ {key:"sys",lv:7,name:"HD 10180 星系",cn:"整个行星系统",dBoss:2*1.11*R_S,bossCol:["#ffd76b","#fff3c8"],starBoss:true,boost:16,
+  pal:["#1a1a22","#6a6a7a","#d8d8e8"],bg:["#050510","#020208"],
+  data:[["恒星","G1V · 1.06 M☉ · 1.11 R☉"],["有效温度","5911 K"],["距离","127 光年（水蛇座）"],["已知行星","6 颗确认：b / c / d / e / f / g"]],
+  names:["星际尘埃","微流星体","流星体","陨石灰","太空砾石","太空巨石","小行星碎块","碳质小行星","岩石小行星","金属小行星","彗星核","短周期彗星","大彗星","特洛伊小行星","外海王星天体","矮行星","冰卫星","小型行星"],
+  chain:["HD 10180 b","HD 10180 c","HD 10180 d","HD 10180 e","HD 10180 f","HD 10180 g"],}
+];
+LEVELS.forEach(L=>{
+  const n=L.names.length;
+  const ds=geom(6e-4, L.starBoss?1.2e7:L.dBoss*0.45, n);
+  L.tiers=L.names.map((nm,i)=>({nm,d:ds[i]}));
+  if(L.starBoss){
+    const R={b:1.13,c:2.40,d:2.29,e:2.72,f:2.70,g:2.62};
+    L.chain.forEach(k=>L.tiers.push({nm:k,d:2*R[k]*R_E,planet:true}));
+    L.tiers.push({nm:"主小行星带残骸",d:1.2e8});
+    L.tiers.push({nm:"柯伊伯带天体",d:5e8});
+  }
+  L.par=[420,480,510,540,570,600,1080][L.lv-1];
+});
+
+/* ================= 工具 ================= */
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const lerp=(a,b,f)=>a+(b-a)*f;
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','.':'·'};
+const sup=n=>String(n).split('').map(c=>SUP[c]||c).join('');
+function fmtD(d){ // 直径
+  if(d<1e-2)return(d*1e3).toFixed(2)+" mm";
+  if(d<1)return(d*1e2).toFixed(2)+" cm";
+  if(d<1e3)return d.toFixed(2)+" m";
+  return(d/1e3).toLocaleString('en-US',{maximumFractionDigits:2})+" km";
+}
+function fmtV(v){ // 体积 m³
+  if(v<1e-9)return(v*1e9).toFixed(3)+" mm³";
+  if(v<1)return(v*1e6).toFixed(2)+" cm³";
+  if(v<1e9)return v.toLocaleString('en-US',{maximumFractionDigits:1})+" m³";
+  return(v/1e9).toLocaleString('en-US',{maximumFractionDigits:2})+" km³";
+}
+function fmtM(m){ // 质量 kg（按铁球）
+  if(m<1)return(m*1e3).toFixed(2)+" g";
+  if(m<1e3)return m.toFixed(2)+" kg";
+  if(m<1e6)return(m/1e3).toFixed(2)+" t";
+  if(m<1e9)return(m/1e6).toFixed(2)+" kt";
+  if(m<1e12)return(m/1e9).toFixed(2)+" Mt";
+  if(m<1e15)return(m/1e12).toFixed(2)+" Gt";
+  const ex=Math.floor(Math.log10(m));return(m/Math.pow(10,ex)).toFixed(1)+"×10"+sup(ex)+" kg";
+}
+const hexRGB=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const RHO=7870, PI6=Math.PI/6;
+const volOf=d=>PI6*d*d*d;           // 球体体积
+const massOf=d=>RHO*volOf(d);       // 铁球质量
+
+/* ================= 音效 ================= */
+let AC=null,muted=false;
+function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}return AC;}
+function beep(f0,f1,dur,vol,type){
+  if(muted||!audio())return;
+  const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
+  o.type=type||"sine";o.frequency.setValueAtTime(f0,t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(f1,1),t+dur);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(AC.destination);o.start(t);o.stop(t+dur+0.02);
+}
+const sEat=r=>beep(280+520*r,120+180*r,0.09,0.14,"triangle");
+const sBounce=()=>beep(140,60,0.12,0.15,"sawtooth");
+const sBoss=()=>{beep(392,392,0.15,0.2);setTimeout(()=>beep(523,523,0.18,0.2),140);setTimeout(()=>beep(659,659,0.3,0.2),300);};
+const sWin=()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,f,0.25,0.2),i*150));};
+
+/* ================= 游戏状态 ================= */
+const cv=document.getElementById("game"),ctx=cv.getContext("2d");
+let W=0,H=0,DPR=1;
+function fit(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;}
+addEventListener("resize",fit);fit();
+
+let scene="title";        // title/select/intro/play/pause/done/finale
+let LV=null;              // 当前关卡
+let px=0,py=0,vx=0,vy=0;  // 玩家(米)
+let dp=1e-3,Vp=volOf(dp); // 直径/体积
+let eatenVol=0,eatenN=0;
+let objs=[],parts=[];
+let bossObj=null,chainIdx=0,bossAnnounced=false;
+let startT=0,elapsed=0;
+let camS=1;               // 像素/米
+let keys={},pointer={on:false,x:0,y:0};
+const BOOST=12;   // 行星关成长倍率; 星系关用 LV.boost(16)
+
+/* 输入 */
+addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if(e.key==="Escape"&&scene==="play")pauseGame();});
+addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;});
+cv.addEventListener("mousemove",e=>{pointer.on=true;pointer.x=e.clientX;pointer.y=e.clientY;});
+cv.addEventListener("touchstart",e=>{pointer.on=true;const t=e.touches[0];pointer.x=t.clientX;pointer.y=t.clientY;},{passive:true});
+cv.addEventListener("touchmove",e=>{const t=e.touches[0];pointer.x=t.clientX;pointer.y=t.clientY;e.preventDefault();},{passive:false});
+
+/* 背景星点(两层视差) */
+const starLayer=[...Array(160)].map(()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.3+0.3,a:Math.random()*0.5+0.2,p:0.15}));
+const starLayer2=[...Array(90)].map(()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.8+0.5,a:Math.random()*0.6+0.3,p:0.4}));
+
+/* ================= 生成 ================= */
+function tierColor(L,ti){
+  const f=ti/(L.tiers.length-1);
+  const h=(hex)=>[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
+  const a=h(L.pal[0]),b=h(L.pal[1]),c=h(L.pal[2]);
+  const c1=f<0.5?a.map((v,i)=>lerp(v,b[i],f*2)):b.map((v,i)=>lerp(v,c[i],(f-0.5)*2));
+  return c1.map(Math.round);
+}
+function pickTier(){
+  const r=dp;
+  const edible=LV.tiers.filter(t=>t.d<=r*1.02);
+  const aspir=LV.tiers.filter(t=>t.d>r&&t.d<=r*3.5&&!t.planet);
+  const pool=[];
+  edible.forEach(t=>{const w=t.d>r*0.5?3:t.d>r*0.25?1.5:0.4;pool.push([t,w]);});
+  aspir.forEach(t=>pool.push([t,0.8]));
+  if(!pool.length){pool.push([LV.tiers[0],1]);}
+  let tot=pool.reduce((s,p)=>s+p[1],0),x=Math.random()*tot;
+  for(const p of pool){x-=p[1];if(x<=0)return p[0];}
+  return pool[0][0];
+}
+function spawnObj(tier,forceDist){
+  const vh=3.2*dp;
+  const ang=Math.random()*Math.PI*2;
+  const dist=forceDist??(1.0+Math.random()*1.8)*vh;
+  const o={x:px+Math.cos(ang)*dist,y:py+Math.sin(ang)*dist,
+    d:tier.d,nm:tier.nm,tier,planet:!!tier.planet,
+    col:(tier.col&&tier.col.length===3)?tier.col:tierColor(LV,Math.max(0,LV.tiers.indexOf(tier))),
+    vx:(Math.random()-0.5)*0.08*tier.d,vy:(Math.random()-0.5)*0.08*tier.d,
+    ph:Math.random()*7,boss:false};
+  objs.push(o);return o;
+}
+function spawnBoss(){
+  if(LV.starBoss){
+    if(chainIdx<6){const t=LV.tiers.find(t=>t.nm===LV.chain[chainIdx]);bossObj=spawnObj(t,4.5*3.2*dp);bossObj.boss=true;toast("目标出现："+t.nm);sBoss();}
+    else{bossObj=spawnObj({nm:"HD 10180（恒星）",d:LV.dBoss,col:[255,215,107]},4.5*3.2*dp);bossObj.boss=true;bossObj.star=true;bossObj.col=[255,215,107];toast("最终目标：恒星 HD 10180！");sBoss();}
+  }else{
+    bossObj=spawnObj({nm:LV.name+"（整颗行星）",d:LV.dBoss,col:hexRGB(LV.bossCol[0])},4.5*3.2*dp);
+    bossObj.boss=true;
+    toast("目标出现："+LV.name+"！继续长大直到能吞下整颗行星！");sBoss();
+  }
+}
+function toast(msg,ms){const t=document.getElementById("toast");t.innerHTML=msg;t.style.opacity=1;
+  clearTimeout(t._tm);t._tm=setTimeout(()=>t.style.opacity=0,ms||2800);}
+
+/* ================= 流程 ================= */
+const $=id=>document.getElementById(id);
+const show=id=>$(id).classList.remove("hide");
+const hide=id=>$(id).classList.add("hide");
+let unlocked=parseInt(localStorage.getItem("tphd_unlock")||"1");
+const best=JSON.parse(localStorage.getItem("tphd_best")||"{}");
+
+function buildSelect(){
+  const g=$("lvGrid");g.innerHTML="";
+  LEVELS.forEach((L,i)=>{
+    const c=document.createElement("div");c.className="card"+(L.lv>unlocked?" lock":"");
+    const b=best[L.lv];
+    c.innerHTML=`<h3>第${L.lv}关 · ${L.name}</h3>
+      <span class="tag" style="background:rgba(92,230,255,.12);color:var(--cy)">${L.cn}</span>
+      <p>${L.starBoss?("终极目标：吞噬整个恒星系统（含恒星 HD 10180，直径 "+fmtD(L.dBoss)+"）")
+        :("行星直径约 "+fmtD(L.dBoss)+"<br>"+L.data.slice(0,2).map(r=>r[0]+" "+r[1]).join(" · "))}</p>
+      <div class="stars">${b?"最佳："+b.s+"★ · "+b.t+"s":(L.lv>unlocked?"🔒 未解锁":"未完成")}</div>`;
+    if(L.lv<=unlocked)c.onclick=()=>{audio();openIntro(i);};
+    g.appendChild(c);
+  });
+}
+function openIntro(i){
+  LV=LEVELS[i];hide("ovSelect");
+  $("iName").textContent=LV.starBoss?LEVELS[6].name:LV.name;
+  $("iType").textContent=LV.cn+" · 第 "+LV.lv+" 关 / 共 7 关";
+  $("iData").innerHTML=LV.data.map(r=>`<span>${r[0]}</span><b>${r[1]}</b>`).join("");
+  $("iMission").innerHTML=LV.starBoss
+    ?"◆ 关卡目标：吞噬<b style='color:var(--am)'>整个 HD 10180 恒星系统</b> —— 小行星、六颗行星 b–g、直至恒星本身！"
+    :"◆ 关卡目标：吞噬<b style='color:var(--am)'>整颗行星 "+LV.name+"</b>！<br>（从直径 1 毫米的微型黑洞开始，天体直径约 "+fmtD(LV.dBoss)+"）";
+  show("ovIntro");scene="intro";
+}
+function startLevel(){
+  hide("ovIntro");hide("ovDone");hide("ovFinale");
+  px=0;py=0;vx=0;vy=0;dp=1e-3;Vp=volOf(dp);
+  eatenVol=0;eatenN=0;objs=[];parts=[];bossObj=null;chainIdx=0;
+  startT=performance.now();elapsed=0;
+  $("hud").style.display="block";
+  $("oLvl").textContent="第"+LV.lv+"关 · "+(LV.starBoss?"HD 10180 星系":LV.name);
+  $("oGoal").textContent=LV.starBoss?"◆ 目标：吞噬整个恒星系统":"◆ 目标：吞噬整颗行星";
+  for(let i=0;i<70;i++)spawnObj(pickTier(),(1+Math.random()*6)*3.2*dp);
+  scene="play";
+  toast("第 "+LV.lv+" 关开始！你只有 1 毫米。",2200);
+}
+function pauseGame(){scene="pause";show("ovPause");}
+$("bPause").onclick=()=>{if(scene==="play")pauseGame();else if(scene==="pause")resumeGame();};
+function resumeGame(){hide("ovPause");scene="play";}
+$("bMute").onclick=e=>{muted=!muted;e.target.textContent=muted?"🔇":"🔊";};
+
+/* 过关 */
+function levelDone(){
+  scene="done";sWin();
+  const t=Math.round(elapsed);
+  const s=t<=LV.par?3:t<=LV.par*1.6?2:1;
+  const stars="★".repeat(s)+"☆".repeat(3-s);
+  if(!best[LV.lv]||s>best[LV.lv].s||t<best[LV.lv].t){best[LV.lv]={s,t};}
+  localStorage.setItem("tphd_best",JSON.stringify(best));
+  unlocked=Math.max(unlocked,Math.min(7,LV.lv+1));
+  localStorage.setItem("tphd_unlock",unlocked);
+  if(LV.lv===7){
+    $("fStars").textContent=stars;
+    $("fRows").innerHTML=`<span>最终直径</span> <b>${fmtD(dp)}</b><br><span>本关用时</span> <b>${t} 秒</b><br><span>已吞噬质量</span> <b>${fmtM(eatenVol*RHO)}</b>（铁球当量）<br><span>已吞噬物体</span> <b>${eatenN} 个</b>`;
+    $("hud").style.display="none";show("ovFinale");scene="finale";return;
+  }
+  $("dTitle").textContent=LV.name+" 吞噬完成！";
+  $("dStars").textContent=stars;
+  $("dRows").innerHTML=`<span>用时</span> <b>${t} 秒</b>（${LV.par} 秒内为 ★★★）<br>
+    <span>最终直径</span> <b>${fmtD(dp)}</b><br>
+    <span>最终质量(铁球)</span> <b>${fmtM(massOf(dp))}</b><br>
+    <span>已吞噬质量</span> <b>${fmtM(eatenVol*RHO)}</b><br>
+    <span>已吞噬物体</span> <b>${eatenN} 个</b>`;
+  $("hud").style.display="none";show("ovDone");
+}
+
+/* 按钮 */
+$("bStart").onclick=()=>{audio();hide("ovTitle");buildSelect();show("ovSelect");scene="select";};
+$("bHow").onclick=()=>{hide("ovTitle");show("ovHow");};
+$("bHowBack").onclick=()=>{hide("ovHow");show("ovTitle");};
+$("bSelBack").onclick=()=>{hide("ovSelect");show("ovTitle");scene="title";};
+$("iBack").onclick=()=>{hide("ovIntro");buildSelect();show("ovSelect");scene="select";};
+$("bGo").onclick=()=>{audio();startLevel();};
+$("bNext").onclick=()=>{hide("ovDone");openIntro(LEVELS.indexOf(LV)+1);};
+$("bReplay").onclick=()=>{startLevel();};
+$("bMenu").onclick=()=>{hide("ovDone");buildSelect();show("ovSelect");scene="select";};
+$("bFinMenu").onclick=()=>{hide("ovFinale");buildSelect();show("ovSelect");scene="select";};
+/* 暂停菜单 */
+const ovP=document.createElement("div");ovP.className="ov hide";ovP.id="ovPause";
+ovP.innerHTML=`<h1 style="font-size:30px">已暂停</h1>
+<div style="margin-top:14px"><button class="btn" id="bpRes">继续</button>
+<button class="btn ghost" id="bpRes2">重新开始</button>
+<button class="btn ghost" id="bpQuit">返回选关</button></div>`;
+document.body.appendChild(ovP);
+$("bpRes").onclick=resumeGame;$("bpRes2").onclick=()=>{hide("ovPause");startLevel();};
+$("bpQuit").onclick=()=>{hide("ovPause");$("hud").style.display="none";buildSelect();show("ovSelect");scene="select";};
+
+/* ================= 主循环 ================= */
+let lastT=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=clamp((now-lastT)/1000,0,0.05);lastT=now;
+  if(scene==="play"){
+    elapsed=(now-startT)/1000;
+    /* --- 移动 --- */
+    let ax=0,ay=0;
+    if(keys["w"]||keys["arrowup"])ay-=1;
+    if(keys["s"]||keys["arrowdown"])ay+=1;
+    if(keys["a"]||keys["arrowleft"])ax-=1;
+    if(keys["d"]||keys["arrowright"])ax+=1;
+    if(pointer.on&&(ax||ay)===0){
+      const dx=pointer.x-W/2,dy=pointer.y-H/2,m=Math.hypot(dx,dy);
+      if(m>24){ax=dx/m*clamp(m/140,0.25,1);ay=dy/m*clamp(m/140,0.25,1);}
+    }
+    const vmax=1.5*dp;
+    vx+=ax*vmax*6*dt;vy+=ay*vmax*6*dt;
+    const sp=Math.hypot(vx,vy);
+    if(sp>vmax){vx*=vmax/sp;vy*=vmax/sp;}
+    vx*=Math.pow(0.12,dt);vy*=Math.pow(0.12,dt);   // 阻尼
+    if(!ax&&!ay){vx*=Math.pow(0.001,dt);vy*=Math.pow(0.001,dt);}
+    px+=vx*dt;py+=vy*dt;
+    /* --- 相机 --- */
+    const target=64/dp;
+    camS=lerp(camS,target,clamp(dt*4,0,1));
+    /* --- 生成 --- */
+    while(objs.length<70)spawnObj(pickTier());
+    /* --- boss --- */
+    if(LV.starBoss){
+      const q=[1.44e7,3.06e7,2.92e7,3.47e7,3.44e7,3.34e7,1.54e9][chainIdx];
+      if(!bossObj&&dp>=0.55*q)spawnBoss();
+    }else if(!bossObj&&dp>=0.55*LV.dBoss)spawnBoss();
+    /* --- 交互 --- */
+    for(let i=objs.length-1;i>=0;i--){
+      const o=objs[i];
+      o.x+=o.vx*dt;o.y+=o.vy*dt;
+      o.ph+=dt;
+      const dx=o.x-px,dy=o.y-py,dist=Math.hypot(dx,dy);
+      if(o.d<=dp*1.02){
+        if(dist<(dp+o.d)*0.42){                    // 吃掉
+          objs.splice(i,1);
+          Vp+=(LV.boost||BOOST)*volOf(o.d);dp=Math.cbrt(Vp/PI6);
+          eatenVol+=volOf(o.d);eatenN++;
+          sEat(clamp(o.d/dp,0.05,1));
+          for(let k=0;k<6;k++){const a=Math.random()*7;
+            parts.push({x:o.x,y:o.y,vx:Math.cos(a)*o.d*2,vy:Math.sin(a)*o.d*2,life:0.5,col:o.col});}
+          if(o.boss){
+            if(LV.starBoss&&chainIdx<6){chainIdx++;bossObj=null;
+              toast(LV.chain[chainIdx-1]+" 已吞噬！下一个目标……");}
+            else{setTimeout(levelDone,600);}
+          }
+          continue;
+        }
+      }else if(dist<(dp+o.d)*0.5){                  // 弹开
+        const nx=dx/(dist||1),ny=dy/(dist||1);
+        px-=nx*(dp+o.d)*0.5*0.3;py-=ny*(dp+o.d)*0.5*0.3;
+        vx-=nx*sp*0.9;vy-=ny*sp*0.9;
+        if(!o._bt||now-o._bt>300){o._bt=now;sBounce();}
+      }
+      /* 太远的普通物体回收重生成 */
+      if(!o.boss&&dist>9*3.2*dp){objs.splice(i,1);}
+    }
+    /* 粒子 */
+    for(let i=parts.length-1;i>=0;i--){const p=parts[i];
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
+      if(p.life<=0)parts.splice(i,1);}
+    updateHUD();
+  }
+  render(now);
+}
+function updateHUD(){
+  $("sD").textContent=fmtD(dp);
+  $("sV").textContent=fmtV(volOf(dp));
+  $("sM").textContent=fmtM(massOf(dp));
+  $("sE").textContent=fmtM(eatenVol*RHO);
+  const pct=clamp(Vp/volOf(LV.dBoss)*100,0,100);
+  $("pfill").style.width=pct.toFixed(3)+"%";
+  $("oMeta").textContent="体积进度 "+pct.toFixed(3)+"% · 已吞噬 "+eatenN+" 个 · "+Math.round(elapsed)+"s";
+  const goal=LV.starBoss?(chainIdx<6?("下一目标："+LV.chain[chainIdx]):"下一目标：恒星 HD 10180")
+                        :"目标：整颗行星 "+LV.name;
+  $("oNext").textContent="◆ "+goal+(bossObj?" —— 已出现，跟随金色箭头！":"");
+}
+
+/* ================= 渲染 ================= */
+function render(now){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  /* 背景 */
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  const L=LV||LEVELS[0];
+  bg.addColorStop(0,L.bg[0]);bg.addColorStop(1,L.bg[1]);
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  drawStars(starLayer,now);drawStars(starLayer2,now);
+  if(scene==="title"||scene==="select"||scene==="intro"){return;}
+
+  const cx=W/2,cy=H/2;
+  /* 视口范围(米) */
+  const vw=W/camS,vh=H/camS;
+
+  /* 对象：按大小排序，大的画在下面 */
+  const sorted=[...objs].sort((a,b)=>b.d-a.d);
+  let nearest=null,nd=1e18;
+  for(const o of sorted){
+    const sx=cx+(o.x-px)*camS,sy=cy+(o.y-py)*camS,rd=o.d*camS;
+    if(sx<-rd-40||sx>W+rd+40||sy<-rd-40||sy>H+rd+40){
+      if(!o.boss&&o.d<=dp){const d2=(o.x-px)**2+(o.y-py)**2;if(d2<nd){nd=d2;nearest=o;}}
+      continue;
+    }
+    drawObject(o,sx,sy,rd,now);
+    if(o.d<=dp){const d2=(o.x-px)**2+(o.y-py)**2;if(d2<nd){nd=d2;nearest=o;}}
+  }
+  /* 粒子 */
+  for(const p of parts){ctx.globalAlpha=clamp(p.life*2,0,1);
+    ctx.fillStyle=`rgb(${p.col[0]},${p.col[1]},${p.col[2]})`;
+    ctx.beginPath();ctx.arc(cx+(p.x-px)*camS,cy+(p.y-py)*camS,Math.max(1.5,p.d*camS*0.1),0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+  drawHole(cx,cy,now);
+  /* 箭头 */
+  if(nearest)arrowTo(nearest,"#7dffb2","●");
+  if(bossObj)arrowTo(bossObj,"#ffd76b","★");
+}
+function drawStars(layer,now){
+  ctx.fillStyle="#fff";
+  const ox=px*camS,oy=py*camS;
+  for(const s of layer){
+    const x=((s.x*W-ox*s.p)%W+W)%W,y=((s.y*H-oy*s.p)%H+H)%H;
+    ctx.globalAlpha=s.a*(0.7+0.3*Math.sin(now/900+s.x*9));
+    ctx.beginPath();ctx.arc(x,y,s.r,0,7);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawObject(o,sx,sy,rd,now){
+  const [r,g,b]=o.col;
+  const edible=o.d<=dp*1.02;
+  if(o.planet||o.boss){drawPlanet(o,sx,sy,rd,now);return;}
+  /* 光晕(可吃) */
+  if(edible){ctx.strokeStyle="rgba(255,255,255,"+(0.28+0.14*Math.sin(now/260+o.ph))+")";
+    ctx.lineWidth=Math.max(1,rd*0.06);
+    ctx.beginPath();ctx.arc(sx,sy,rd*1.15,0,7);ctx.stroke();}
+  const grd=ctx.createRadialGradient(sx-rd*0.3,sy-rd*0.3,rd*0.1,sx,sy,rd);
+  grd.addColorStop(0,`rgba(${Math.min(r+70,255)},${Math.min(g+70,255)},${Math.min(b+70,255)},1)`);
+  grd.addColorStop(1,`rgb(${r},${g},${b})`);
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(sx,sy,rd,0,7);ctx.fill();
+  /* 名称 */
+  if(rd>7){ctx.font="600 "+clamp(rd*0.28,9,15)+"px ui-monospace,Consolas,monospace";
+    ctx.textAlign="center";ctx.fillStyle="rgba(230,238,255,"+clamp(rd*0.02,0.35,0.8)+")";
+    ctx.fillText(o.nm,sx,sy-rd-5);}
+}
+function drawPlanet(o,sx,sy,rd,now){
+  const [r,g,b]=o.col;
+  /* 大气/日冕 */
+  const glow=ctx.createRadialGradient(sx,sy,rd*0.6,sx,sy,rd*(o.star?2.2:1.5));
+  glow.addColorStop(0,`rgba(${r},${g},${b},0.5)`);glow.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=glow;ctx.beginPath();ctx.arc(sx,sy,rd*(o.star?2.2:1.5),0,7);ctx.fill();
+  const grd=ctx.createRadialGradient(sx-rd*0.35,sy-rd*0.35,rd*0.1,sx,sy,rd);
+  if(o.star){grd.addColorStop(0,"#fff8dc");grd.addColorStop(0.5,"#ffd76b");grd.addColorStop(1,"#e8963c");}
+  else{grd.addColorStop(0,`rgba(${Math.min(r+80,255)},${Math.min(g+80,255)},${Math.min(b+80,255)},1)`);
+    grd.addColorStop(1,`rgb(${Math.max(r-40,0)},${Math.max(g-40,0)},${Math.max(b-40,0)})`);}
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(sx,sy,rd,0,7);ctx.fill();
+  if(o.star){ctx.strokeStyle="rgba(255,240,200,"+(0.4+0.2*Math.sin(now/300))+")";
+    ctx.lineWidth=Math.max(1.5,rd*0.03);
+    ctx.beginPath();ctx.arc(sx,sy,rd*1.12,0,7);ctx.stroke();}
+  else{/* 行星环(气态) */ctx.save();ctx.translate(sx,sy);ctx.rotate(-0.4);
+    ctx.strokeStyle=`rgba(${r},${g},${b},0.45)`;ctx.lineWidth=Math.max(1,rd*0.07);
+    ctx.beginPath();ctx.ellipse(0,0,rd*1.55,rd*0.5,0,0,7);ctx.stroke();ctx.restore();}
+  if(rd>10){ctx.font="700 "+clamp(rd*0.16,11,22)+"px ui-monospace,Consolas,monospace";
+    ctx.textAlign="center";ctx.fillStyle="rgba(255,255,255,0.9)";
+    ctx.fillText(o.nm,sx,sy-rd*(o.star?2.3:1.6));}
+}
+function drawHole(x,y,now){
+  const R=dp*camS/2;
+  /* 吸积盘 */
+  ctx.save();ctx.translate(x,y);ctx.rotate(now/900);
+  for(let i=0;i<3;i++){ctx.strokeStyle=`rgba(255,${150+i*30},60,${0.5-i*0.13})`;
+    ctx.lineWidth=Math.max(1.5,R*0.22);
+    ctx.beginPath();ctx.ellipse(0,0,R*1.9,R*0.62,i*1.05,0,7);ctx.stroke();}
+  ctx.restore();
+  /* 光子环 */
+  ctx.strokeStyle="rgba(255,230,180,0.9)";ctx.lineWidth=Math.max(1.2,R*0.08);
+  ctx.beginPath();ctx.arc(x,y,R*1.06,0,7);ctx.stroke();
+  /* 事件视界 */
+  const grd=ctx.createRadialGradient(x,y,R*0.2,x,y,R);
+  grd.addColorStop(0,"#000");grd.addColorStop(1,"#0a0a14");
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(x,y,R,0,7);ctx.fill();
+}
+function arrowTo(o,col,icon){
+  const sx=W/2+(o.x-px)*camS,sy=H/2+(o.y-py)*camS;
+  if(sx>0&&sx<W&&sy>0&&sy<H)return;
+  const dx=sx-W/2,dy=sy-H/2,a=Math.atan2(dy,dx);
+  const rr=Math.min(W/2,H/2)-34;
+  const bx=W/2+Math.cos(a)*rr,by=H/2+Math.sin(a)*rr;
+  ctx.save();ctx.translate(bx,by);ctx.rotate(a);
+  ctx.fillStyle=col;ctx.globalAlpha=0.7+0.3*Math.sin(performance.now()/200);
+  ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.closePath();ctx.fill();
+  ctx.restore();ctx.globalAlpha=1;
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
